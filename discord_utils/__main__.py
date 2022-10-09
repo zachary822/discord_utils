@@ -35,10 +35,11 @@ def list_commands():
     table = Table(title="Commands")
     table.add_column("id")
     table.add_column("name")
+    table.add_column("type")
     table.add_column("description")
 
     for command in discord_commands:
-        table.add_row(command.id, command.name, command.description)
+        table.add_row(command.id, command.name, str(command.type), command.description)
 
     console.print(table)
 
