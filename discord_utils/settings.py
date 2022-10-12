@@ -2,33 +2,39 @@ from pathlib import PurePosixPath as Path
 from typing import Any
 
 import boto3
+from botocore.exceptions import BotoCoreError
 from pydantic import BaseSettings
 from pydantic.env_settings import SettingsSourceCallable
 
-client = boto3.client("ssm")
-
 
 def parameter_store_settings(settings: BaseSettings) -> dict[str, Any]:
-    try:
-        prefix = Path(settings.__config__.parameter_path)  # type: ignore[attr-defined]
-        names = [str(prefix / n) for n in settings.__fields__.keys()]
-    except TypeError:
-        prefix = None
-        names = list(settings.__fields__.keys())
-
-    response = client.get_parameters(
-        Names=names,
-        WithDecryption=True,
-    )
-
     result = {}
 
-    for param in response["Parameters"]:
-        if prefix is not None:
-            key = str(Path(param["Name"]).relative_to(prefix))
-        else:
-            key = param["Name"]
-        result[key] = param["Value"]
+    try:
+        client = boto3.client("ssm")
+
+        try:
+            prefix = Path(settings.__config__.parameter_path)  # type: ignore[attr-defined]
+            names = [str(prefix / n) for n in settings.__fields__.keys()]
+        except TypeError:
+            prefix = None
+            names = list(settings.__fields__.keys())
+
+        response = client.get_parameters(
+            Names=names,
+            WithDecryption=True,
+        )
+
+        for param in response["Parameters"]:
+            if prefix is not None:
+                key = str(Path(param["Name"]).relative_to(prefix))
+            else:
+                key = param["Name"]
+            result[key] = param["Value"]
+
+        return result
+    except BotoCoreError:
+        pass
 
     return result
 
