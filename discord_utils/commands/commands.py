@@ -1,3 +1,7 @@
+import json
+from typing import Optional
+
+import requests
 import typer
 from rich.table import Table
 
@@ -25,17 +29,27 @@ def list_commands(ctx: typer.Context):
 
 @app.command("add")
 def add_command(
-    ctx: typer.Context, name: str, type_: CommandType = typer.Argument(..., metavar="TYPE"), description: str = ""
+    ctx: typer.Context,
+    name: str,
+    type_: CommandType = typer.Argument(..., metavar="TYPE"),
+    description: str = typer.Argument(""),
+    options: Optional[str] = typer.Option(None),
 ):
     data = {
         "name": name,
         "type": int(type_),
     }
 
+    if options:
+        data["options"] = json.loads(options)
+
     if type_ == CommandType.CHAT_INPUT:
         data["description"] = description
 
-    console.print(ctx.obj.client.add_command(data))
+    try:
+        console.print(ctx.obj.client.add_command(data))
+    except requests.HTTPError as e:
+        console.print(e.response.text)
 
 
 @app.command("rm")

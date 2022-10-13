@@ -48,6 +48,7 @@ class DiscordClient(requests.Session):
             f"{self.api_endpoint}/applications/{self.client_id}/commands",
             json=data,
         )
+        resp.raise_for_status()
         return Command.parse_raw(resp.content)
 
     def delete_command(self, id_: str):
